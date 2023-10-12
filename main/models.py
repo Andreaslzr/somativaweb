@@ -53,6 +53,7 @@ class automovel(models.Model):
     marca = models.CharField(max_length=50)
     modelo = models.CharField(max_length=50)
     ano = models.CharField(max_length=4)
+    clienteFK = models.ForeignKey(cliente, related_name='automovelCliente', on_delete=models.CASCADE,null=True, blank=True)
 
     def __str__(self):
         return self.marca + '-' + self.modelo
@@ -75,6 +76,9 @@ class manutencao_categoria(models.Model):
 class manutencao_produto(models.Model):
     manutencaoFK = models.ForeignKey(manutencao, related_name='manutençãoProduto', on_delete=models.CASCADE)
     produtoFK = models.ForeignKey(produto, related_name='produtoManutenção', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.manutencaoFK.automovelFK.modelo + '-' + self.produtoFK.nome
     
 class pagamento(models.Model):
     CATEGORIA_PAGAMENTO = [
@@ -116,6 +120,7 @@ class posto_funcionario(models.Model):
 class reserva(models.Model):
     clienteFK = models.ForeignKey(cliente, related_name='reservaCliente', on_delete=models.CASCADE)
     postoFK = models.ForeignKey(postoTrabalho, related_name='reservaPosto', on_delete=models.CASCADE)
+    manutencaoFK = models.ForeignKey(manutencao, related_name='reservaManutenção', on_delete=models.CASCADE,null=True, blank=True)
     dia = models.DateField()
     comentario = models.CharField(max_length=400, null=True, blank=True)
     nota = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(5)])
