@@ -18,3 +18,4 @@ router.register(r'reservas',ReservaView)
 router.register(r'disponibilidades',DisponibilidadeView)
 
 urlpatterns = router.urls
+urlpatterns.append( path('comprar/', comprarView.as_view(), name='produtos_comprar'))

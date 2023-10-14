@@ -66,6 +66,19 @@ class manutencao(models.Model):
     def __str__(self):
         return self.automovelFK.modelo
     
+    def save(self, manutencao_id=None, *args, **kwargs):
+        Manutencao = manutencao.objects.get(id=manutencao_id)
+
+        produtos_utilizados = manutencao_produto.objects.filter(manutencao=Manutencao)
+        valor_produtos = produtos_utilizados.aggregate(total_produtos=Sum(produtoFK__valorVenda))
+
+        categoria = manutencao_categoria.objects.filter(manutencao=Manutencao)
+        maoDeObra = categoria.aggregate(total=Sum(categoriaFK__valorMaoDeObra))
+
+        valor_total = valor_produtos + maoDeObra
+        manutencao.valorTotal = valor_total
+        super(manutencao, self).save(*args, **kwargs)
+    
 class manutencao_categoria(models.Model):
     manutencaoFK = models.ForeignKey(manutencao, related_name='manutençãoCategoria', on_delete=models.CASCADE)
     categoriaFK = models.ForeignKey(categoriaServico, related_name='categoriaManutenção', on_delete=models.CASCADE)
@@ -79,6 +92,11 @@ class manutencao_produto(models.Model):
 
     def __str__(self):
         return self.manutencaoFK.automovelFK.modelo + '-' + self.produtoFK.nome
+    
+    def save(self, *args, **kwargs):
+        if produto.objects.filter(id=self.produtoFK):
+            produto.QuantEstoque -1
+        super(manutencao_produto, self).save(*args, **kwargs)
     
 class pagamento(models.Model):
     CATEGORIA_PAGAMENTO = [
@@ -103,6 +121,11 @@ class pagamento(models.Model):
 
     def __str__(self):
         return self.descricao
+    
+    def save(self, *args, **kwargs):
+        if manutencao.objects.filter(id=self.manutencaoFK):
+            self.valorFinal = manutencao.valorTotal - self.valorDesconto
+        super(pagamento, self).save(*args, **kwargs)
 
 class postoTrabalho(models.Model):
     descricao = models.CharField(max_length=100)
@@ -136,4 +159,7 @@ class disponibilidade(models.Model):
 
     def __str__(self):
         return self.postoFK.descricao + '-' + str(self.dia)
+
+
+
 

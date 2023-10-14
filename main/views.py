@@ -26,6 +26,13 @@ class CustomModelViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+class comprarView(APIView):
+    def get(self, request):
+        produtos_comprar = produto.objects.get(request.data)
+        if produtos_comprar['QuantEstoque'] <4:
+            serializer = ProdutoSerializer(produtos_comprar, many=True)
+        return Response(status=200, data=serializer.data)
+
 
 class NotaMediaView(APIView):
 
@@ -108,6 +115,14 @@ class ManutencaoView(ModelViewSet):
             queryset = manutencao.objects.filter(automovelFK__clienteFK__nome=user.username)
         return queryset 
    
+   def create(self, request, *args, **kwargs): 
+        data = request.data
+
+        if user.is_superuser or funcionario.id:
+            super(ReservaView, self).create(request,*args,**kwargs)
+        else:
+            return Response(status=500, data='erro ao salvar manutençao')
+   
 class ManutencaoCategoriaView(ModelViewSet):
    queryset = manutencao_categoria.objects.all() #informa p/ a lib qual as consultas a serem feitas
    serializer_class = ManutencaoCatSerializer #informa o serializer
@@ -170,8 +185,8 @@ class ReservaView(ModelViewSet):
         diaEscolhido = strToDate(data['dia'])
         availabilities = []
 
-        availability = disponibilidade.objects.filter(postoFK=data['postoFK']).filter(dia=diaEscolhido).filter(reservaFK=None).first()
-        if availability is None: 
+        availability = disponibilidade.objects.filter(postoFK=data['postoFK']).filter(dia=diaEscolhido).filter(reservaFK=None)
+        if availability <3: 
                 return Response(status=409,data='essa data nã está disponivel, considere escolher outra data')
         
         availabilities.append(availability)
@@ -192,4 +207,12 @@ class DisponibilidadeView(CustomModelViewSet):
    filter_backends = [DjangoFilterBackend, filters.OrderingFilter] #usa a lib django-filter
    filterset_fields = ['postoFK','reservaFK','dia']
    ordering_fields = '__all__'
-   permission_classes = (DjangoModelPermissionsOrAnonReadOnly,)
+   permission_classes = (IsAuthenticated,)
+
+   def create(self, request, *args, **kwargs): 
+        data = request.data
+
+        if user.is_superuser:
+            super(ReservaView, self).create(request,*args,**kwargs)
+        else:
+            return Response(status=500, data='erro ao salvar disponibilidade')
